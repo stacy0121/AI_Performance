@@ -1,0 +1,29 @@
+let classifier;
+let img;
+
+function preload(){
+  classifier = ml5.imageClassifier('MobileNet');
+  img = loadImage('images/bird.jpg');
+}
+
+
+function setup() {
+  createCanvas(640,480);
+  //createCanvas(windowWidth, windowHeight);
+  classifier.classify(img, gotResult);
+  image(img, 0, 0, 640, 480);   // rect와 같다
+  //image(img, 0, 0, windowWidth, windowHeight);
+}
+
+function gotResult(error, results){
+  if(error){
+    console.error(error);
+  }
+  console.log(results);
+  text(results[0].label, 10, 10);
+  text(results[0].confidence*100, 10, 20);
+}
+
+function draw() {
+
+}
