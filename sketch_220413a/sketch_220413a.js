@@ -3,10 +3,10 @@ let poseNet;
 let poses = [];
 
 function setup() {
-  createCanvas(1000, 560);
-  img = createImg('libraries/runner.jpg', imageReady);
-  img.size(width, height);
-  img.hide();
+  createCanvas(640, 360);
+  img = createImage('runner.jpg', imageReady);
+  //img.size(windowWidth, windowHeight);   // width, height
+  //img.hide();
   frameRate(1);
 }
 
@@ -22,8 +22,8 @@ function imageReady(){
 }
 
 function modelReady(){
-  text("Model Loaded", 10, 50);
-  select('#status');//.html('Model Loaded');
+  // select('#status').html('Model Loaded');
+  let div = createDiv("Model Loaded");   // text("Model Loaded", 10, 50);
   poseNet.singlePose(img);
 }
 
@@ -32,7 +32,7 @@ function draw() {
     image(img, 0, 0, width, height);
     //drawSkeleton(poses);
     drawKeypoints(poses);
-    noloop();
+    noLoop();
   }
 }
 
