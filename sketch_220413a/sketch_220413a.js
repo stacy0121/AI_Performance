@@ -4,9 +4,9 @@ let poses = [];
 
 function setup() {
   createCanvas(640, 360);
-  img = createImage('runner.jpg', imageReady);
-  //img.size(windowWidth, windowHeight);   // width, height
-  //img.hide();
+  img = createImg('runner.jpg', imageReady);
+  img.size(640, 360);   // width, height
+  img.hide();
   frameRate(1);
 }
 
@@ -28,12 +28,12 @@ function modelReady(){
 }
 
 function draw() {
-  if(poses.length > 0){
+  //if(poses.length > 0){
     image(img, 0, 0, width, height);
     //drawSkeleton(poses);
     drawKeypoints(poses);
     noLoop();
-  }
+  //}
 }
 
 function drawKeypoints(){
