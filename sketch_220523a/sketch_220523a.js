@@ -16,7 +16,7 @@ function setup() {
   recSpeak = new p5.SpeechRec('en-US', results);
   recSpeak.start(true, false);
   let button = createButton('clear');
-  button.mousePressed(startDrawing);   // 자동으로?(시간)
+  button.mousePressed(startDrawing);   // 자동으로?(시간), 손 스치는 걸로
 }
 
 function modelReady(){
@@ -25,7 +25,7 @@ function modelReady(){
 
 function startDrawing(){
   background(220);
-  x = width/2;
+  x = width/2;   // width/2 바꾸기 keypoints[a][x]로
   y = height/2;
   model.reset();
   model.generate(gotStroke);
