@@ -1,4 +1,4 @@
-// 손목을 따라다니는 음성인식된 글씨
+// 손목을 따라다니는 음성 인식된 글씨. 가운데를 중심으로 양옆에서의 글씨 방향이 다름
 var texts = "ABCDEFU";
 var chars = [];
 var directionX;   // 방향
@@ -6,13 +6,18 @@ var directionX;   // 방향
 let video;
 let poseNet;
 let poses = [];
-var keypointX;
-var phand;   // 이전 손목 위치. pmouseX 역할
 let speech;
+// 점선을 위한 변수
+var x;
+var y = 50;
+var y1;
+var numDots = 10;
 
 function setup() {
-  createCanvas(640,480);
+  createCanvas(720,570);
   directionX = 1;   // 1은 정상적 움직임
+  x = width/2;      // 화면 중심에 점선
+  y1 = height-y;
   
   video = createCapture(VIDEO);
   video.size(width, height);
@@ -45,21 +50,28 @@ function draw() {
   image(video, 0, 0, width, height);
   
   drawKeypoints();
-  // 손목의 이전 x좌표 전달
-  phand = keypointX;
-  // 현재 x좌표 찾기 및 방향 설정
+
+  // x좌표 찾기 및 방향 설정
   for (let i = 0; i < poses.length; i ++) {
     const pose = poses[i].pose;
     const keypoint = pose.keypoints[10];
-    if(phand<keypoint.position.x){   // 왼쪽으로 움직임
+    if(keypoint.position.x<width/2){   // 왼쪽
       directionX = -1;
     }
-    if(phand>=keypoint.position.x){
+    if(keypoint.position.x>=width/2){   // 오른쪽
       directionX = 1;
     }
   }
   textSize(15);
-  text("오른팔을 올리고 한글 단어를 말해보세요. 팔을 움직이는 방향에 따라 글자가 따라갑니다.", 20, 40);
+  textStyle(BOLD);
+  text("오른팔을 올리고 한글 단어를 말해보세요. 구역에 따라 다른 방향의 글자가 손목을 따라갑니다.", 50, 40);
+  
+  // 가운데 점선 그리기
+  spacing = 1.0/(numDots-1);
+  for (var i =0; i < numDots; i++) {
+    var ny = lerp(y, y1, spacing * i);   // 시작점 y좌표
+    rect(x, ny, 5, 20);
+  }
 }
 
 function windowResized(){
@@ -71,9 +83,10 @@ function drawKeypoints() {
     for(var j=0; j<chars.length; j++){
       const pose = poses[i].pose;
       const keypoint = pose.keypoints[10];     // 오른팔 손목
-      keypointX = keypoint.position.x;         // x좌표
+      const keypointX = keypoint.position.x;   // x좌표
       const keypointY = keypoint.position.y;   // y좌표
-      text(chars[j], keypointX+directionX*j*15, random(keypointY-3, keypointY+3));
+      // 음성 인식된 글씨 출력
+      text(chars[j], keypointX+(directionX*j*15), random(keypointY-3, keypointY+3));
     }
   }
 }
