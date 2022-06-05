@@ -1,4 +1,5 @@
 // 음성 인식된 단어의 그림이 얼굴에 그려진다. 손으로 얼굴을 스치면 그림이 바뀐다.
+// 0511, 0523, 0530
 // sketchRNN
 let model;
 let previous_pen = 'down';
@@ -14,6 +15,9 @@ let predictions = [];
 var xx =0; var yy=0;
 
 // posenet
+let poseNet;
+let poses = [];
+var wristX; var wristY;
 
 function preload(){
   model = ml5.sketchRNN('cat');   // 기본 고양이
@@ -30,13 +34,19 @@ function setup() {
   facemesh.on("predict", results => {
     predictions = results;   // 예측 결과
   });
-  video.hide();
+  video.hide();   // html 상 비디오 지우기
   
   // 음성 인식 세팅
   recSpeak = new p5.SpeechRec('en-US', results);
   recSpeak.start(true, false);
   let button = createButton('clear');
-  button.mousePressed(startDrawing);   // 자동으로?(시간)
+  button.mousePressed(startDrawing);   // 얼굴에 손이 스칠 때로 고치자
+  
+  //PoseNet
+  poseNet = ml5.poseNet(video);
+  poseNet.on("pose", function(results){
+    poses = results;
+  });
 }
 
 function modelReady(){
@@ -88,6 +98,16 @@ function results(){
 }
 
 function drawKeypoints(){
+  // PoseNet
+  for(let i=0; i<poses.length; i++) {
+    for(var j=0; j<chars.length; j++){
+      const pose = poses[i].pose;
+      const keypoint = pose.keypoints[10];     // 오른팔 손목
+      wristX = keypoint.position.x;
+      wristY = keypoint.position.y;
+    }
+  }
+  
   // FaceMash
   for(let i=0; i<predictions.length; i++){
       const keypoints = predictions[i].scaledMesh;
