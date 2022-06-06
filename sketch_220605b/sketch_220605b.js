@@ -10,18 +10,19 @@ function setup() {
   canvas.hide();
   background(220);
   model = ml5.sketchRNN('cat', modelReady);
-  let button = select('#clear');
+  let button = createButton('clear');
   button.mousePressed(clearDrawing);
 }
 
 function modelReady(){
   canvas.show();
   canvas.mouseReleased(startSketchRNN);
-  select('#status').html('model ready');
+  let div = createDiv('Model Loaded');
 }
 
 function clearDrawing(){
   background(220);
+  seedStrokes = [];
   model.reset();
 }
 
@@ -37,11 +38,11 @@ function draw() {
     strokeWeight(3.0);
     line(pmouseX, pmouseY, mouseX, mouseY);
     let userStroke = {
-      dx: mouseX - pmouseY,
-      dy: mouseX - pmouseY,
+      dx: mouseX - pmouseX,
+      dy: mouseY - pmouseY,
       pen: 'down'
     };
-    seedStrokes.push(userStroke);
+    seedStrokes.push(userStroke);   // 획 추가
   }
   
   if(strokePath){
