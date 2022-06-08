@@ -18,13 +18,14 @@ var xx =0; var yy=0;
 let poseNet;
 let poses = [];
 var wristX; var wristY;
-
+var photo =0;
+let c;
 function preload(){
   model = ml5.sketchRNN('cat');   // 기본 고양이
 }
 
 function setup() {
-  createCanvas(640, 480);
+  createCanvas(640, 480, WEBGL);
   background(220);
   
   // video setting
@@ -54,33 +55,37 @@ function modelReady(){
 }
 
 function startDrawing(){
-  background(220);
-  //x = width/2;
-  //y = height/2;
-  // 얼굴 위
-  x = xx;
-  y = yy;
+  background(225);
+  x = width/2;
+  y = height/2;
   model.reset();
   model.generate(gotStroke);
 }
 
 function draw() {
-  image(video, 0, 0, width, height);   // 얘가 가리는 것 같은데...
-  drawKeypoints();
-  
-  if(strokePath){
-    if(previous_pen == 'down'){
-      stroke(0);
-      strokeWeight(3.0);
-      line(x, y, x+strokePath.dx, y+strokePath.dy);
+  if(photo === 1){   // 그림이 다 그려졌을 때 비디오가 나온다
+    image(video, 0, 0, width, height);
+  }
+  if(photo === 0){   // 그림이 먼저 그려진다
+    if(strokePath){
+      if(previous_pen == 'down'){
+        stroke(0);
+        strokeWeight(3.0);
+        line(x, y, x+strokePath.dx, y+strokePath.dy);
+        // noFill + 도형화해서 그 위에 texture().
+        // 궤적?
+      }
+      x += strokePath.dx;
+      y += strokePath.dy;
+      previous_pen = strokePath.pen;
+      if(strokePath.pen != 'end'){   // 그림 그리기가 끝나면
+        strokePath = null;
+        model.generate(gotStroke);
+        c = get();   // 이미지로 저장
+        photo = 1;   // flag 바꾸기
+      }
     }
-    x += strokePath.dx;
-    y += strokePath.dy;
-    previous_pen = strokePath.pen;
-    if(strokePath.pen != 'end'){
-      strokePath = null;
-      model.generate(gotStroke);
-    }
+    drawKeypoints();
   }
 }
 
@@ -99,22 +104,44 @@ function results(){
 
 function drawKeypoints(){
   // PoseNet
-  for(let i=0; i<poses.length; i++) {
-    for(var j=0; j<chars.length; j++){
-      const pose = poses[i].pose;
-      const keypoint = pose.keypoints[10];     // 오른팔 손목
-      wristX = keypoint.position.x;
-      wristY = keypoint.position.y;
-    }
-  }
+  //for(let i=0; i<poses.length; i++) {
+  //  for(var j=0; j<chars.length; j++){
+  //    const pose = poses[i].pose;
+  //    const keypoint = pose.keypoints[10];     // 오른팔 손목
+  //    wristX = keypoint.position.x;
+  //    wristY = keypoint.position.y;
+  //  }
+  //}
   
   // FaceMash
   for(let i=0; i<predictions.length; i++){
-      const keypoints = predictions[i].scaledMesh;
-      for(let j = 0; j<keypoints.length; j++){
-        const[x, y] = keypoints[171];
-        xx=x;
-        yy=y;
-      }
+      sil = predictions[i].annotations;
+      texture(c);
+      noStroke();
+      noFill();
+      rightEyeLower();   // 오른쪽 볼 도형화
+      //image(c, x, y);
   }
 }
+
+function rightEyeLower(){
+    beginShape();
+    for(let i = 0;i<9;i++){
+        let [x, y] = sil.rightEyeLower0[i];
+        vertex(x, y);
+      }
+    
+    for(let i = 8;i<-1;i++){
+        let [x, y] = sil.rightEyeLower1[i];
+        vertex(x, y);
+      }
+    for(let i = 0;i<9;i++){
+        let [x, y] = sil.rightEyeLower2[i];
+        vertex(x, y);
+      }
+    for(let i = 8;i<-1;i++){
+        let [x, y] = sil.rightEyeLower3[i];
+        vertex(x, y);
+      }
+    endShape();
+  }
