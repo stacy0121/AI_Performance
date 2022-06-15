@@ -12,18 +12,18 @@ let text = [];
 let facemesh;
 let video;
 let predictions = [];
-var xx =0; var yy=0;
+let face;
+let sil;
 
 // posenet
 let poseNet;
 let poses = [];
 var wristX; var wristY;
 var photo =0;
-let c;
+let c = 0;
 
 function preload(){
   model = ml5.sketchRNN('cat');   // 기본 고양이
-  c = loadImage("alpha.png");
 }
 
 function setup() {
@@ -38,8 +38,9 @@ function setup() {
     predictions = result;   // 예측 결과
   });
   video.hide();   // html 상 비디오 지우기
+  face = new Face();
   
-  // 음성 인식 세팅
+  // sketchRNN 세팅
   recSpeak = new p5.SpeechRec('en-US', results);
   recSpeak.start(true, false);
   let button = createButton('clear');
@@ -53,20 +54,21 @@ function setup() {
 }
 
 function modelReady(){
-  console.log('model loaded');   // 온라인에서 불러오기 완료 표시
+  // 온라인에서 불러오기 완료
+  console.log("You can say");
 }
 
 function startDrawing(){
   background(225);
-  x = width/2;
-  y = height/2;
+  x = 0;
+  y = 0;
   model.reset();
   model.generate(gotStroke);
-}    // 다 실행됨
+}
 
 function draw() {
   if(photo === 1){   // 그림이 다 그려졌을 때 비디오가 나온다
-    image(video, 0, 0, width, height);
+    image(video, -width/2, -height/2, width, height);
   }
   if(photo === 0){   // 그림이 먼저 그려진다
     if(strokePath){
@@ -74,8 +76,6 @@ function draw() {
         stroke(0);
         strokeWeight(3.0);
         line(x, y, x+strokePath.dx, y+strokePath.dy);
-        // noFill + 도형화해서 그 위에 texture().
-        // 궤적?
       }
       // 펜을 움직임
       x += strokePath.dx;
@@ -88,6 +88,7 @@ function draw() {
         photo = 1;   // flag 바꾸기
       }
     }
+    //scale(1.5);
     drawKeypoints();
   }
 }
@@ -97,7 +98,7 @@ function gotStroke(err, s){
 }
 
 // 음성 인식 결과 로그 출력
-function results(){   // 너무 늦게 됨
+function results(){
   if(recSpeak.resultValue){
     text = recSpeak.resultString.toLowerCase().split(".");
     model = ml5.sketchRNN(text[0]);
@@ -121,30 +122,8 @@ function drawKeypoints(){
     sil = predictions[i].annotations;
     texture(c);        // sketchRNN 그림
     noStroke();
-    noFill();
-    rightEyeLower();   // 오른쪽 볼 도형화
-    image(c, x, y);
+    //noFill();
+    fill(0, 0, 255, 50);
+    face.rightEyeLower();   // 오른쪽 볼 도형화
   }
 }
-
-function rightEyeLower(){
-    beginShape();
-    for(let i = 0;i<9;i++){
-        let [xx, yy] = sil.rightEyeLower0[i];   // rightEyeLower0: Array[9]
-        vertex(xx, yy);
-      }
-    
-    for(let i = 8;i<-1;i--){   // -- 아닌가
-        let [xx, yy] = sil.rightEyeLower1[i];   // rightEyeLower1: Array[9]
-        vertex(xx, yy);
-      }
-    for(let i = 0;i<9;i++){
-        let [xx, yy] = sil.rightEyeLower2[i];   // rightEyeLower2: Array[9]
-        vertex(xx, yy);
-      }
-    for(let i = 8;i<-1;i--){
-        let [xx, yy] = sil.rightEyeLower3[i];   // rightEyeLower3: Array[9]
-        vertex(xx, yy);
-      }
-    endShape();
-  }
