@@ -20,8 +20,10 @@ let poses = [];
 var wristX; var wristY;
 var photo =0;
 let c;
+
 function preload(){
   model = ml5.sketchRNN('cat');   // 기본 고양이
+  c = loadImage("alpha.png");
 }
 
 function setup() {
@@ -32,8 +34,8 @@ function setup() {
   video = createCapture(VIDEO);
   video.size(width, height);
   facemesh = ml5.facemesh(video, modelReady);
-  facemesh.on("predict", results => {
-    predictions = results;   // 예측 결과
+  facemesh.on("predict", result => {
+    predictions = result;   // 예측 결과
   });
   video.hide();   // html 상 비디오 지우기
   
@@ -45,8 +47,8 @@ function setup() {
   
   //PoseNet
   poseNet = ml5.poseNet(video);
-  poseNet.on("pose", function(results){
-    poses = results;
+  poseNet.on("pose", function(result_){
+    poses = result_;
   });
 }
 
@@ -60,7 +62,7 @@ function startDrawing(){
   y = height/2;
   model.reset();
   model.generate(gotStroke);
-}
+}    // 다 실행됨
 
 function draw() {
   if(photo === 1){   // 그림이 다 그려졌을 때 비디오가 나온다
@@ -75,6 +77,7 @@ function draw() {
         // noFill + 도형화해서 그 위에 texture().
         // 궤적?
       }
+      // 펜을 움직임
       x += strokePath.dx;
       y += strokePath.dy;
       previous_pen = strokePath.pen;
@@ -94,7 +97,7 @@ function gotStroke(err, s){
 }
 
 // 음성 인식 결과 로그 출력
-function results(){
+function results(){   // 너무 늦게 됨
   if(recSpeak.resultValue){
     text = recSpeak.resultString.toLowerCase().split(".");
     model = ml5.sketchRNN(text[0]);
@@ -113,35 +116,35 @@ function drawKeypoints(){
   //  }
   //}
   
-  // FaceMash
+  // FaceMash (볼이 캔버스)
   for(let i=0; i<predictions.length; i++){
-      sil = predictions[i].annotations;
-      texture(c);
-      noStroke();
-      noFill();
-      rightEyeLower();   // 오른쪽 볼 도형화
-      //image(c, x, y);
+    sil = predictions[i].annotations;
+    texture(c);        // sketchRNN 그림
+    noStroke();
+    noFill();
+    rightEyeLower();   // 오른쪽 볼 도형화
+    image(c, x, y);
   }
 }
 
 function rightEyeLower(){
     beginShape();
     for(let i = 0;i<9;i++){
-        let [x, y] = sil.rightEyeLower0[i];
-        vertex(x, y);
+        let [xx, yy] = sil.rightEyeLower0[i];   // rightEyeLower0: Array[9]
+        vertex(xx, yy);
       }
     
-    for(let i = 8;i<-1;i++){
-        let [x, y] = sil.rightEyeLower1[i];
-        vertex(x, y);
+    for(let i = 8;i<-1;i--){   // -- 아닌가
+        let [xx, yy] = sil.rightEyeLower1[i];   // rightEyeLower1: Array[9]
+        vertex(xx, yy);
       }
     for(let i = 0;i<9;i++){
-        let [x, y] = sil.rightEyeLower2[i];
-        vertex(x, y);
+        let [xx, yy] = sil.rightEyeLower2[i];   // rightEyeLower2: Array[9]
+        vertex(xx, yy);
       }
-    for(let i = 8;i<-1;i++){
-        let [x, y] = sil.rightEyeLower3[i];
-        vertex(x, y);
+    for(let i = 8;i<-1;i--){
+        let [xx, yy] = sil.rightEyeLower3[i];   // rightEyeLower3: Array[9]
+        vertex(xx, yy);
       }
     endShape();
   }
