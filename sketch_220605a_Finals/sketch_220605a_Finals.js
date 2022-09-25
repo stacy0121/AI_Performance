@@ -1,5 +1,4 @@
-// 음성 인식된 단어의 그림이 얼굴에 그려진다. 손으로 얼굴을 스치면 그림이 바뀐다.
-// 0511, 0523, 0530
+// 음성 인식된 단어의 그림이 얼굴에 그려진다.
 // sketchRNN
 let model;
 let previous_pen = 'down';
@@ -15,12 +14,15 @@ let predictions = [];
 let face;
 let sil;
 
-// posenet
-let poseNet;
-let poses = [];
-var wristX; var wristY;
-var photo =0;
-let c = 0;
+var countText;
+var px = [];
+var py = [];
+var xx = [];
+var yy = [];
+
+var fX;
+var fY;
+var img;
 
 function preload(){
   model = ml5.sketchRNN('cat');   // 기본 고양이
@@ -28,16 +30,15 @@ function preload(){
 
 function setup() {
   createCanvas(640, 480, WEBGL);
-  background(220);
-  
   // video setting
   video = createCapture(VIDEO);
   video.size(width, height);
+  video.hide();   // html 상 비디오 지우기
+  countText = 0;  //초기화
   facemesh = ml5.facemesh(video, modelReady);
   facemesh.on("predict", result => {
     predictions = result;   // 예측 결과
   });
-  video.hide();   // html 상 비디오 지우기
   face = new Face();
   
   // sketchRNN 세팅
@@ -45,52 +46,64 @@ function setup() {
   recSpeak.start(true, false);
   let button = createButton('clear');
   button.mousePressed(startDrawing);   // 얼굴에 손이 스칠 때 startDrawing
-  
-  //PoseNet
-  poseNet = ml5.poseNet(video);
-  poseNet.on("pose", function(result_){
-    poses = result_;
-  });
+  startDrawing();
 }
 
 function modelReady(){
   // 온라인에서 불러오기 완료
   console.log("You can say");
+  startDrawing();
 }
 
 function startDrawing(){
+  countText = 0; //초기화
+  
   background(225);
-  x = 0;
-  y = 0;
+  x = width/2;
+  y = height/2;
   model.reset();
   model.generate(gotStroke);
 }
 
 function draw() {
-  if(photo === 1){   // 그림이 다 그려졌을 때 비디오가 나온다
-    image(video, -width/2, -height/2, width, height);
-  }
-  if(photo === 0){   // 그림이 먼저 그려진다
-    if(strokePath){
-      if(previous_pen == 'down'){
+  translate(-width / 2, -height / 2);
+  //background(255, 0, 0);
+  image(video, 0, 0, width, height);
+  noStroke();
+  fill(251, 206, 177, 30);
+  rect(0, 0, 64, 48);   // 그림이 그려질 네모(캔버스 크기의 1/10)
+  
+  if(strokePath){
+    if(previous_pen == 'down'){
+      stroke(0);
+      strokeWeight(3.0);
+      line(x, y, x+strokePath.dx, y+strokePath.dy);
+      
+      countText++;  // 좌표를 배열에 저장하기 위한 숫자 증가
+      //위에 그려지는 그림을 array로 저장
+      // 10을 나누어서 좌측 상단의 네모박스 안에도 그려지게 함
+      px[countText] = x/10;
+      py[countText] = y/10;
+      xx[countText] = x/10 + strokePath.dx/10;
+      yy[countText] = y/10 + strokePath.dy/10;
+    } else {
+      // 10배 작은 그림을 좌측 상단 박스에 보여줌
+      for (var i = 0; i < countText; i++) {
         stroke(0);
-        strokeWeight(3.0);
-        line(x, y, x+strokePath.dx, y+strokePath.dy);
-      }
-      // 펜을 움직임
-      x += strokePath.dx;
-      y += strokePath.dy;
-      previous_pen = strokePath.pen;
-      if(strokePath.pen != 'end'){   // 그림 그리기가 끝나면
-        strokePath = null;
-        model.generate(gotStroke);
-        c = get();   // 이미지로 저장
-        photo = 1;   // flag 바꾸기
+        line(px[i],py[i],xx[i],yy[i]);
       }
     }
-    //scale(1.5);
-    drawKeypoints();
+    // 펜을 움직임
+    x += strokePath.dx;
+    y += strokePath.dy;
+    previous_pen = strokePath.pen;
+    if(strokePath.pen != 'end'){   // 한 획이 끝남
+      strokePath = null;
+      model.generate(gotStroke);
+    }
   }
+  drawKeypoints();
+  img = get(0, 0, 64, 48); // get을 이용해 좌측 상단 박스(그림)를 캡쳐
 }
 
 function gotStroke(err, s){
@@ -107,23 +120,24 @@ function results(){
 }
 
 function drawKeypoints(){
-  // PoseNet
-  //for(let i=0; i<poses.length; i++) {
-  //  for(var j=0; j<chars.length; j++){
-  //    const pose = poses[i].pose;
-  //    const keypoint = pose.keypoints[10];     // 오른팔 손목
-  //    wristX = keypoint.position.x;
-  //    wristY = keypoint.position.y;
-  //  }
-  //}
-  
-  // FaceMash (볼이 캔버스)
+  // FaceMash
   for(let i=0; i<predictions.length; i++){
-    sil = predictions[i].annotations;
-    texture(c);        // sketchRNN 그림
-    noStroke();
-    //noFill();
-    fill(0, 0, 255, 50);
-    face.rightEyeLower();   // 오른쪽 볼 도형화
+    sil = predictions[i].scaledMesh;   // 얼굴 위치를 임의의 점으로 나눔
+    
+    const [x0, y0] = sil[425];
+    const [x2, y2] = sil[366];
+    const [x4, y4] = sil[435];
+    const [x6, y6] = sil[434];   // 네 개의 꼭짓점
+  
+    // 캡쳐된 이미지를 볼에
+    texture(img);
+    textureMode(IMAGE);
+    // 볼 도형화
+    beginShape();
+    vertex(x0, y0, 0, 0);
+    vertex(x2, y2, 64, 0);
+    vertex(x4, y4, 64, 48);
+    vertex(x6, y6, 0, 48);
+    endShape(CLOSE);
   }
 }
